@@ -1,0 +1,53 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Build and test backend
+      working-directory: ./phonely-backend
+      run: |
+        npm install
+        npm test
+
+    - name: Build and test frontend
+      working-directory: ./phonely-frontend
+      run: |
+        npm install
+        npm run build
+
+    - name: Build Docker containers
+      run: |
+        docker-compose build
+
+    - name: Run Docker containers
+      run: |
+        docker-compose up -d
+
+    - name: Run tests in containers
+      run: |
+        docker-compose exec backend npm test
